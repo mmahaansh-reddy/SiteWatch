@@ -4,7 +4,7 @@
 (Foxsense Innovations – Founder's Office, 24 Jul 2026).
 Reference project: *Proposed Commercial Building for M/S. Foxsense, Vellanaipatti Road, Coimbatore.*
 
-> **Status:** T0 ✅ · T1 ✅ · Role-based access ✅ (permissions part of T5, done early) → T2 next.
+> **Status:** T0 ✅ · T1 ✅ · Role-based access ✅ · **Data entry live** (T2–T4 core + T6 Schedule + Vendors) → T7 next.
 > **Delivery target:** feature-complete front-end in **2 weeks** (by ~03 Dec 2026), deployed on Vercel.
 
 ---
@@ -32,7 +32,7 @@ not yet a multi-user production system. Everything is built so the database can 
 |---|---|---|
 | Framework | **Next.js** (latest stable, App Router) + **TypeScript (strict)** | Requested; Vercel-native |
 | Styling | **Tailwind CSS** + **shadcn/ui** (Radix primitives) + `lucide-react` icons | Requested; accessible components we own in-repo |
-| Browser storage | **IndexedDB via Dexie** (not raw `localStorage`) | `localStorage` caps at ~5 MB and can't hold photos/PDFs. IndexedDB is still local browser storage, holds blobs, and is async. A tiny `localStorage` key holds only UI prefs (current user, project, theme). |
+| Browser storage | **IndexedDB** via a small built-in adapter + zustand `persist` (Dexie deferred) | `localStorage` caps at ~5 MB and can't hold photos/PDFs. IndexedDB is still local browser storage, holds blobs, and is async. A tiny `localStorage` key holds only UI prefs (current user, project, theme). |
 | Validation | **Zod** schemas for every entity | One source of truth for types + form validation + future API contracts |
 | Forms | `react-hook-form` + Zod resolver | Low-typing, validated forms |
 | Data reads | `dexie-react-hooks` (`useLiveQuery`) | Reactive UI on local data, no extra state library |
@@ -120,14 +120,14 @@ Each task is small, self-contained, ends in a working app, and is committed sepa
 |---|---|---|---|
 | **T0** | Plan + decisions (this README) | — | ✅ Done |
 | **T1** | Scaffold: Next.js + TS strict + Tailwind + shadcn/ui, lint/format, app shell (sidebar, top bar, project & user switcher, light/dark) | — | ✅ Written · build pending |
-| **T2** | Domain schemas (Zod) for all 18 entities in PRD §5 + formatters (₹, dates) | §5 | Types compile; unit tests for formatters |
-| **T3** | Data layer: Dexie DB, repositories, audit/change-history, JSON backup/restore, "reset demo data" | FR-1.10, 8.3, NFR-6, NFR-8 | CRUD + audit tests pass |
-| **T4** | Seed data: Foxsense project, phases (Appendix A), activities, vendors, materials, sample BOQ | §8 | App opens with realistic data |
+| **T2** | Domain schemas (Zod) for all 18 entities in PRD §5 + formatters (₹, dates) | §5 | ✅ Core entities (project, phase, activity, vendor, remark, audit) · rest added per module |
+| **T3** | Data layer: Dexie DB, repositories, audit/change-history, JSON backup/restore, "reset demo data" | FR-1.10, 8.3, NFR-6, NFR-8 | ✅ IndexedDB store, audit trail, JSON backup/restore, demo reset, clear |
+| **T4** | Seed data: Foxsense project, phases (Appendix A), activities, vendors, materials, sample BOQ | §8 | ✅ 9 phases, 66 activities, 7 vendors, 4 exception remarks |
 | **T5** | Users, roles, permissions matrix, multi-project switching, admin user screen | FR-8.1–8.2, NFR-4 | Permissions ✅ done early · user CRUD + audit viewer pending |
-| **T6** | Schedule: phases & activities CRUD, floor-template cloning, soft predecessor warnings, remarks | FR-1.1–1.3, 1.6, 1.9 | Clone Stilt → Floor 1 works |
-| **T7** | Site (mobile) view: my current/upcoming activities, update dates/%/remarks, photo capture | FR-1.4, 1.8, 9.1, 9.3, NFR-7 | Usable one-handed on a phone |
+| **T6** | Schedule: phases & activities CRUD, floor-template cloning, soft predecessor warnings, remarks | FR-1.1–1.3, 1.6, 1.9 | ✅ Done |
+| **T7** | Site (mobile) view: my current/upcoming activities, update dates/%/remarks, photo capture | FR-1.4, 1.8, 9.1, 9.3, NFR-7 | ◐ Progress updates + remarks live in site view; photos pending |
 | **T8** | Gantt: phase grouping, planned vs actual bars, delay flags, vendor ownership, filters, change history | FR-1.5, 1.7, 4.5 | 300+ activities render smoothly |
-| **T9** | Vendors, work orders, BOQ, invoices + approval workflow, budget vs actual rollups | FR-2.1–2.4, 4.1–4.3 | Project/phase/trade variance correct |
+| **T9** | Vendors, work orders, BOQ, invoices + approval workflow, budget vs actual rollups | FR-2.1–2.4, 4.1–4.3 | ◐ Vendor master (FR-4.1) done; BOQ/invoices pending |
 | **T10** | Payment milestones (phase-linked, auto-Due, early/late reasons), upcoming-payments view, budget threshold alerts | FR-2.5–2.6, 14.1–14.5 | Completing a phase flips milestone to Due |
 | **T11** | Materials: master, indents + approval, receipts (with challan photo), consumption, low-stock | FR-3.1–3.7 | Stock updates on receipt/consumption |
 | **T12** | Site diary (auto-filled from day's updates), labour by trade, equipment register + usage/idle + cost | FR-5.1, 10.1–10.5, 11.1–11.5 | Missing-diary days flagged |
@@ -215,7 +215,24 @@ every other sidebar module shows an "Under construction" placeholder until its t
 
 ---
 
-## 9. Role-based access (how it works)
+## 9. Adding data (what works now)
+
+| Where | Who | What you can do |
+|---|---|---|
+| **Activities** (`/schedule`) | PM, Admin | Add/rename/delete phases; add/edit/delete activities (dates, trade, vendor, engineer, predecessor, actuals, %); **Copy floor** template to another phase with a date shift; remarks |
+| | Site Engineer, Contractor | See own activities; **Update** actual dates & % complete; add remarks |
+| **Vendors** (`/vendors`) | PM, Admin | Add/edit/delete vendors (trade, contact, contract value ₹, terms) |
+| **Site view** (`/site`) | Everyone | "My activities": current + next 14 days, tap to update progress, remarks |
+| **Dashboard** | PM, Admin | Live overall %, days behind/ahead, phase progress, critical delays; data tools |
+| **Data tools** (Dashboard / Admin) | PM, Admin | Download backup · Restore backup · Load demo data · Clear all data · recent changes (audit) |
+
+Rules enforced on every save: PRD §6 permissions (site roles can only change actual dates and % on
+their own activities), validation (dates, 0–100 %), soft predecessor warnings (never block),
+baseline dates kept when plans change, 100 % ⇔ completed with an actual end date, audit entry per change.
+
+Data lives in this browser's IndexedDB (`sitewatch` database). First visit loads the Foxsense demo data.
+
+## 10. Role-based access (how it works)
 
 The PRD §6 matrix lives in **`src/domain/permissions.ts`** — the single source of truth.
 
@@ -234,7 +251,7 @@ Building blocks:
 - Sidebar is filtered per role; switching user jumps to that role's home page.
 - `/admin` renders the live matrix, generated from the policy.
 
-## 10. Decision log
+## 11. Decision log
 
 | Date | Decision | Reason |
 |---|---|---|
@@ -251,3 +268,8 @@ Building blocks:
 | 19-Nov-26 | **Approvals are PM-only**; Admin "Full" excludes approve | PRD §2.2 — PM "approves indents and payments"; Admin configures. *Open question Q8* |
 | 19-Nov-26 | PM can maintain the material master (create/edit) as well as approve | FR-3.1 lists Admin and PM |
 | 19-Nov-26 | Role-dependent UI renders only after hydration (skeleton first) | Server HTML can't know the browser-stored user; avoids flashing the wrong menu |
+| 19-Nov-26 | **zustand + hand-written IndexedDB adapter instead of Dexie** for now | No package downloads in the dev environment; zero new dependencies; same storage (IndexedDB). Dexie can replace it behind `src/data/` later |
+| 19-Nov-26 | All writes go through pure functions in `src/data/ops.ts` (permission check → validate → normalise → audit) | One tested path; identical rules can run on a server later |
+| 19-Nov-26 | Site roles editing "own activities" may change only actual start/end and % (FR-1.4) | Plans, vendors and names stay under PM control |
+| 19-Nov-26 | Native `<select>` and `<input type="date">` in forms | Fastest, most familiar controls on phones (NFR-7); no extra dependencies |
+| 19-Nov-26 | Demo "today" for seeded actuals is 19-Nov-26; delays are computed against the real current date | Demo data stays realistic as time passes |

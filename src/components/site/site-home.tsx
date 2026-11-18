@@ -25,6 +25,8 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { usePermissions } from "@/hooks/use-permissions";
 import { firstWebPageFor } from "@/lib/nav";
 
+import { MyActivities } from "./my-activities";
+
 interface SiteAction {
   label: string;
   icon: LucideIcon;
@@ -36,7 +38,7 @@ interface SiteAction {
 
 /** Quick actions for site staff; each appears only if the role is allowed to do it. */
 const SITE_ACTIONS: SiteAction[] = [
-  { label: "Update progress", icon: ListChecks, module: "schedule", action: "edit", task: "T7" },
+  { label: "Update progress", icon: ListChecks, module: "schedule", action: "edit", task: "live" },
   { label: "Take photo", icon: Camera, module: "schedule", action: "edit", task: "T7" },
   { label: "Raise indent", icon: PackagePlus, module: "materials", action: "request", task: "T11" },
   { label: "Log receipt", icon: PackagePlus, module: "materials", action: "log", task: "T11" },
@@ -81,15 +83,16 @@ export function SiteHome() {
             <button
               key={label}
               type="button"
-              disabled
-              title={`Coming in ${task}`}
+              disabled={task !== "live"}
+              onClick={() => document.getElementById("my-activities")?.scrollIntoView({ behavior: "smooth" })}
+              title={task === "live" ? label : `Coming in ${task}`}
               className="bg-card flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border p-4 text-center shadow-sm disabled:opacity-70"
             >
               <Icon className="text-primary size-7" aria-hidden />
               <span className="font-medium">{label}</span>
               <span className="flex flex-wrap justify-center gap-1">
                 {scope(module, action) === "own" ? <Badge variant="outline">own only</Badge> : null}
-                <Badge variant="secondary">{task}</Badge>
+                {task === "live" ? null : <Badge variant="secondary">{task}</Badge>}
               </span>
             </button>
           ))}
@@ -125,21 +128,15 @@ export function SiteHome() {
         </div>
       ) : null}
 
-      <Card>
-        <CardContent className="text-muted-foreground text-sm">
-          {can("schedule", "view")
-            ? `${scope("schedule", "view") === "own" ? "Your assigned" : "All"} current and upcoming activities will appear here (FR-1.8, task T7).`
-            : "No schedule access."}
-          {webPage ? (
-            <>
-              {" "}
-              <Link href={webPage.href} className="text-primary underline-offset-4 hover:underline">
-                Open web view
-              </Link>
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
+      <MyActivities />
+
+      {webPage ? (
+        <p className="text-muted-foreground text-center text-sm">
+          <Link href={webPage.href} className="text-primary underline-offset-4 hover:underline">
+            Open the full web view
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

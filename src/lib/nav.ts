@@ -241,7 +241,7 @@ export const NAV_PERMISSION: Record<ModuleSlug, PermissionModule> = {
 };
 
 /** Pages that have their own route folder (everything else uses the placeholder route). */
-export const BUILT_PAGES: ReadonlySet<ModuleSlug> = new Set<ModuleSlug>(["dashboard", "admin"]);
+export const BUILT_PAGES: ReadonlySet<ModuleSlug> = new Set<ModuleSlug>(["dashboard", "admin", "schedule", "vendors"]);
 
 export function canSeePage(role: Role, slug: ModuleSlug): boolean {
   return can(role, NAV_PERMISSION[slug], "view");
