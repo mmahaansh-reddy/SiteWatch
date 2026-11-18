@@ -4,7 +4,7 @@
 (Foxsense Innovations – Founder's Office, 24 Jul 2026).
 Reference project: *Proposed Commercial Building for M/S. Foxsense, Vellanaipatti Road, Coimbatore.*
 
-> **Status:** T0 ✅ · T1 ✅ (written; first `npm install` + build pending — see §8) → T2 next.
+> **Status:** T0 ✅ · T1 ✅ · Role-based access ✅ (permissions part of T5, done early) → T2 next.
 > **Delivery target:** feature-complete front-end in **2 weeks** (by ~03 Dec 2026), deployed on Vercel.
 
 ---
@@ -123,7 +123,7 @@ Each task is small, self-contained, ends in a working app, and is committed sepa
 | **T2** | Domain schemas (Zod) for all 18 entities in PRD §5 + formatters (₹, dates) | §5 | Types compile; unit tests for formatters |
 | **T3** | Data layer: Dexie DB, repositories, audit/change-history, JSON backup/restore, "reset demo data" | FR-1.10, 8.3, NFR-6, NFR-8 | CRUD + audit tests pass |
 | **T4** | Seed data: Foxsense project, phases (Appendix A), activities, vendors, materials, sample BOQ | §8 | App opens with realistic data |
-| **T5** | Users, roles, permissions matrix, multi-project switching, admin user screen | FR-8.1–8.2, NFR-4 | Each role sees correct menus/actions |
+| **T5** | Users, roles, permissions matrix, multi-project switching, admin user screen | FR-8.1–8.2, NFR-4 | Permissions ✅ done early · user CRUD + audit viewer pending |
 | **T6** | Schedule: phases & activities CRUD, floor-template cloning, soft predecessor warnings, remarks | FR-1.1–1.3, 1.6, 1.9 | Clone Stilt → Floor 1 works |
 | **T7** | Site (mobile) view: my current/upcoming activities, update dates/%/remarks, photo capture | FR-1.4, 1.8, 9.1, 9.3, NFR-7 | Usable one-handed on a phone |
 | **T8** | Gantt: phase grouping, planned vs actual bars, delay flags, vendor ownership, filters, change history | FR-1.5, 1.7, 4.5 | 300+ activities render smoothly |
@@ -193,6 +193,7 @@ Each task is small, self-contained, ends in a working app, and is committed sepa
 | Q5 | Any **branding** (logo, colours)? | Neutral theme with an accent colour |
 | Q6 | Default **retention %** and **DLP periods** per trade? | 5 % retention; 12-month DLP |
 | Q7 | Site diary **weather**: manual pick-list or auto-fetched? | Manual pick-list (no API needed) |
+| Q8 | Should **Admin** also be able to approve (indents, invoices, change orders, payments)? | No — PM only |
 
 ---
 
@@ -214,7 +215,26 @@ every other sidebar module shows an "Under construction" placeholder until its t
 
 ---
 
-## 9. Decision log
+## 9. Role-based access (how it works)
+
+The PRD §6 matrix lives in **`src/domain/permissions.ts`** — the single source of truth.
+
+| Role | Lands on | Sees (web) | Can update |
+|---|---|---|---|
+| **Founder's Office / PM** | `/dashboard` | Everything except User Management | Full on all modules; **only role that approves** (budget/invoices, indents, change orders, payments) |
+| **Admin** | `/dashboard` | Everything incl. Users & Audit | Full record access everywhere; manages users; does not approve |
+| **Site Engineer** | `/site` | Activities, Gantt, Diary, Budget (view), Vendors (assigned), Materials, Equipment, Warranty, Documents, Reports (own DPR) | Own activities, own diary entries, indents, material receipts, equipment usage, warranty items |
+| **Contractor** | `/site` | Own activities, Diary (view), own trade's budget, own vendor record, Materials, Change Orders (own), own payments, own warranty items, own documents, own DPR | Own activities, indents, change-order requests, responses to own warranty items |
+
+Building blocks:
+- `can(role, module, action)` / `canOnRecord(…, isOwn)` — scope is `all` or `own`.
+- `<RequireAccess module>` — page guard (shows "No access" instead of the page).
+- `<Can module action isOwn>` — show/hide a button or form.
+- `usePermissions()` — hook bound to the current user.
+- Sidebar is filtered per role; switching user jumps to that role's home page.
+- `/admin` renders the live matrix, generated from the policy.
+
+## 10. Decision log
 
 | Date | Decision | Reason |
 |---|---|---|
@@ -227,3 +247,7 @@ every other sidebar module shows an "Under construction" placeholder until its t
 | 19-Nov-26 | Temporary demo users/projects in `src/lib/demo-identities.ts` (role switcher instead of login) | Replaced by seeded data in T4 and RBAC in T5 |
 | 19-Nov-26 | `button` has a `touch` size (h-12) for site screens | NFR-7 large touch targets |
 | 19-Nov-26 | TypeScript `strict` + `noUncheckedIndexedAccess` | Catch missing-data bugs early |
+| 19-Nov-26 | Permissions as actions × scope (`view/create/edit/delete/approve/request/log/respond` × `all/own`) | Expresses every PRD §6 cell exactly (e.g. "Raise indent, log receipt") |
+| 19-Nov-26 | **Approvals are PM-only**; Admin "Full" excludes approve | PRD §2.2 — PM "approves indents and payments"; Admin configures. *Open question Q8* |
+| 19-Nov-26 | PM can maintain the material master (create/edit) as well as approve | FR-3.1 lists Admin and PM |
+| 19-Nov-26 | Role-dependent UI renders only after hydration (skeleton first) | Server HTML can't know the browser-stored user; avoids flashing the wrong menu |

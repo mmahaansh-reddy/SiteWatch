@@ -1,9 +1,10 @@
 import { Construction } from "lucide-react";
 
+import { AccessPanel } from "@/components/auth/access-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { NavItem } from "@/lib/nav";
+import { NAV_PERMISSION, type NavItem } from "@/lib/nav";
 
 /** Shown for modules whose plan task hasn't been delivered yet. */
 export function ModulePlaceholder({ item }: { item: NavItem }) {
@@ -11,6 +12,9 @@ export function ModulePlaceholder({ item }: { item: NavItem }) {
   return (
     <>
       <PageHeader title={item.label} description={item.description} />
+      <div className="mb-4">
+        <AccessPanel module={NAV_PERMISSION[item.slug]} />
+      </div>
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           <span className="bg-accent text-accent-foreground flex size-12 items-center justify-center rounded-full">

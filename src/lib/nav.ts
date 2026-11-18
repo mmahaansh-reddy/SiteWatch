@@ -19,6 +19,8 @@ import {
   Banknote,
 } from "lucide-react";
 
+import { can, type PermissionModule, type Role } from "@/domain/permissions";
+
 export type ModuleSlug =
   | "dashboard"
   | "schedule"
@@ -218,6 +220,48 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
+
+/** Which permission module guards each page. */
+export const NAV_PERMISSION: Record<ModuleSlug, PermissionModule> = {
+  dashboard: "dashboard",
+  notifications: "notifications",
+  schedule: "schedule",
+  gantt: "schedule",
+  diary: "diary",
+  "change-orders": "change_orders",
+  budget: "budget",
+  payments: "payments",
+  vendors: "vendors",
+  materials: "materials",
+  equipment: "equipment",
+  warranty: "warranty",
+  documents: "documents",
+  reports: "reports",
+  admin: "users",
+};
+
+/** Pages that have their own route folder (everything else uses the placeholder route). */
+export const BUILT_PAGES: ReadonlySet<ModuleSlug> = new Set<ModuleSlug>(["dashboard", "admin"]);
+
+export function canSeePage(role: Role, slug: ModuleSlug): boolean {
+  return can(role, NAV_PERMISSION[slug], "view");
+}
+
+/** Navigation filtered to the pages a role may open; empty groups are dropped. */
+export function navForRole(role: Role): NavGroup[] {
+  return NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => canSeePage(role, item.slug)),
+  })).filter((group) => group.items.length > 0);
+}
+
+/** First web page a role can open (site roles have no dashboard home). */
+export function firstWebPageFor(role: Role): NavItem | undefined {
+  const preferred = (["dashboard", "schedule"] as const)
+    .map((slug) => findNavItem(slug))
+    .find((item) => item && canSeePage(role, item.slug));
+  return preferred ?? ALL_NAV_ITEMS.find((item) => canSeePage(role, item.slug));
+}
 
 export function findNavItem(slug: string): NavItem | undefined {
   return ALL_NAV_ITEMS.find((item) => item.slug === slug);

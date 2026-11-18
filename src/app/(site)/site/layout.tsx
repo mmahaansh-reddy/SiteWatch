@@ -1,10 +1,7 @@
-import Link from "next/link";
-import { LayoutDashboard } from "lucide-react";
-
 import { Brand } from "@/components/layout/brand";
 import { UserSwitcher } from "@/components/layout/switchers";
 import { ThemeToggle } from "@/components/layout/theme";
-import { Button } from "@/components/ui/button";
+import { WebViewButton } from "@/components/site/web-view-button";
 
 /** Mobile-first layout for Site Engineers and Contractors (PRD §2.2, NFR-7). */
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -13,11 +10,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <header className="bg-background sticky top-0 z-40 flex h-14 items-center gap-2 border-b px-3">
         <Brand href="/site" />
         <div className="ml-auto flex items-center gap-1">
-          <Button asChild variant="ghost" size="icon" aria-label="Open dashboard">
-            <Link href="/dashboard">
-              <LayoutDashboard />
-            </Link>
-          </Button>
+          <WebViewButton />
           <ThemeToggle />
           <UserSwitcher />
         </div>

@@ -3,16 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { NAV_GROUPS } from "@/lib/nav";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { navForRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/stores/session";
 
-/** Navigation list shared by the desktop sidebar and the mobile sheet. */
+/** Navigation list shared by the desktop sidebar and the mobile sheet, filtered by role. */
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const hydrated = useHydrated();
+  const user = useCurrentUser();
+
+  if (!hydrated) {
+    return (
+      <div className="space-y-2 px-3 py-4" aria-hidden>
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="bg-muted h-8 animate-pulse rounded-md" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <nav aria-label="Main" className="flex flex-col gap-5 px-3 py-4">
-      {NAV_GROUPS.map((group) => (
+      {navForRole(user.role).map((group) => (
         <div key={group.label} className="flex flex-col gap-1">
           <p className="text-muted-foreground px-2 text-xs font-medium tracking-wide uppercase">
             {group.label}

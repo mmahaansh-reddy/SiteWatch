@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Building2, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { homeFor } from "@/domain/permissions";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { DEMO_PROJECTS, DEMO_USERS, ROLE_LABELS } from "@/lib/demo-identities";
 import { initials } from "@/lib/utils";
 import { useCurrentProject, useCurrentUser, useSession } from "@/stores/session";
@@ -53,6 +56,17 @@ export function ProjectSwitcher() {
 export function UserSwitcher() {
   const user = useCurrentUser();
   const setCurrentUser = useSession((s) => s.setCurrentUser);
+  const router = useRouter();
+  const hydrated = useHydrated();
+
+  function switchTo(id: string) {
+    const next = DEMO_USERS.find((u) => u.id === id);
+    if (!next) return;
+    setCurrentUser(id);
+    router.push(homeFor(next.role));
+  }
+
+  if (!hydrated) return <div className="bg-muted size-8 animate-pulse rounded-full" aria-hidden />;
 
   return (
     <DropdownMenu>
@@ -70,7 +84,7 @@ export function UserSwitcher() {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>Signed in as (demo)</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={user.id} onValueChange={setCurrentUser}>
+        <DropdownMenuRadioGroup value={user.id} onValueChange={switchTo}>
           {DEMO_USERS.map((u) => (
             <DropdownMenuRadioItem key={u.id} value={u.id}>
               <div className="flex flex-col">

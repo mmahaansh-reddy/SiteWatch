@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ModulePlaceholder } from "@/components/layout/module-placeholder";
-import { ALL_NAV_ITEMS, findNavItem } from "@/lib/nav";
+import { RequireAccess } from "@/components/auth/require-access";
+import { ALL_NAV_ITEMS, BUILT_PAGES, NAV_PERMISSION, findNavItem } from "@/lib/nav";
 
 /**
  * Placeholder route for modules not built yet. As each module ships, it gets its own
@@ -11,7 +12,7 @@ import { ALL_NAV_ITEMS, findNavItem } from "@/lib/nav";
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return ALL_NAV_ITEMS.filter((item) => item.slug !== "dashboard").map((item) => ({
+  return ALL_NAV_ITEMS.filter((item) => !BUILT_PAGES.has(item.slug)).map((item) => ({
     module: item.slug,
   }));
 }
@@ -26,6 +27,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ModulePage({ params }: Props) {
   const { module } = await params;
   const item = findNavItem(module);
-  if (!item) notFound();
-  return <ModulePlaceholder item={item} />;
+  if (!item || BUILT_PAGES.has(item.slug)) notFound();
+  return (
+    <RequireAccess module={NAV_PERMISSION[item.slug]}>
+      <ModulePlaceholder item={item} />
+    </RequireAccess>
+  );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClipboardCheck, Gauge, TrendingDown, Wallet } from "lucide-react";
 
+import { RequireAccess } from "@/components/auth/require-access";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,7 @@ const PHASES = [
 
 export default function DashboardPage() {
   return (
-    <>
+    <RequireAccess module="dashboard">
       <PageHeader
         title="Dashboard"
         description="Foxsense Commercial Building · Vellanaipatti Road, Coimbatore"
@@ -72,6 +73,6 @@ export default function DashboardPage() {
           </ul>
         </CardContent>
       </Card>
-    </>
+    </RequireAccess>
   );
 }

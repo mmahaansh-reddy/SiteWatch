@@ -1,21 +1,17 @@
 /**
- * TEMPORARY demo identities for the app shell (T1).
- * Replaced in T4 (seed data in IndexedDB) and T5 (users, roles, permissions).
+ * TEMPORARY demo identities for the app shell.
+ * Replaced by seeded users in IndexedDB (T4) and the user-management screen (T5).
  */
+import type { Role } from "@/domain/permissions";
 
-export type Role = "admin" | "pm" | "site_engineer" | "contractor";
-
-export const ROLE_LABELS: Record<Role, string> = {
-  admin: "Admin",
-  pm: "Founder's Office / PM",
-  site_engineer: "Site Engineer",
-  contractor: "Contractor",
-};
+export { ROLE_LABELS, isSiteRole, type Role } from "@/domain/permissions";
 
 export interface DemoUser {
   id: string;
   name: string;
   role: Role;
+  /** Contractor users are linked to a vendor; drives "own" scope. */
+  vendorId?: string;
 }
 
 export interface DemoProject {
@@ -25,10 +21,10 @@ export interface DemoProject {
 }
 
 export const DEMO_USERS: DemoUser[] = [
-  { id: "u-admin", name: "Admin User", role: "admin" },
   { id: "u-pm", name: "Founder's Office", role: "pm" },
+  { id: "u-admin", name: "Admin User", role: "admin" },
   { id: "u-se", name: "Site Engineer", role: "site_engineer" },
-  { id: "u-con", name: "Shree Mahalakshmi & Co.", role: "contractor" },
+  { id: "u-con", name: "Shree Mahalakshmi & Co.", role: "contractor", vendorId: "v-smc" },
 ];
 
 export const DEMO_PROJECTS: DemoProject[] = [
@@ -38,8 +34,3 @@ export const DEMO_PROJECTS: DemoProject[] = [
     location: "Vellanaipatti Road, Coimbatore",
   },
 ];
-
-/** Roles whose primary surface is the mobile site view (PRD §2.2). */
-export function isSiteRole(role: Role): boolean {
-  return role === "site_engineer" || role === "contractor";
-}
